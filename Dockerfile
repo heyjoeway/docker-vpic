@@ -1,14 +1,24 @@
 FROM mcr.microsoft.com/mssql/server:2019-latest
 
 ENV ACCEPT_EULA=Y
+ENV VPIC_URL=https://vpic.nhtsa.dot.gov/api/vPICList_lite_2025_11.bak.zip
 
 USER root
+
+# Install unzip
+RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/*
 
 # Create backup directory
 RUN mkdir -p /var/opt/mssql/backup
 
-# Copy the vpic.bak file
-COPY vpic.bak /var/opt/mssql/backup/vpic.bak
+# Download, extract, and rename the vpic backup file
+RUN set -e && \
+    curl -L -f -o /tmp/vpic.zip "$VPIC_URL" && \
+    unzip /tmp/vpic.zip -d /tmp && \
+    rm /tmp/vpic.zip && \
+    BAK_FILE=$(find /tmp -maxdepth 1 -name '*.bak' -type f | head -n 1) && \
+    if [ -z "$BAK_FILE" ]; then echo "No .bak file found in archive"; exit 1; fi && \
+    mv "$BAK_FILE" /var/opt/mssql/backup/vpic.bak
 
 # Copy startup script
 COPY entrypoint.sh /entrypoint.sh
