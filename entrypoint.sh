@@ -25,10 +25,11 @@ if [ "$DB_EXISTS" != "1" ]; then
     
     # Get logical file names from the backup
     /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -Q "
-    RESTORE DATABASE vpic FROM DISK = '/var/opt/mssql/backup/vpic.bak'
-    WITH MOVE 'vpic' TO '/var/opt/mssql/data/vpic.mdf',
-         MOVE 'vpic_log' TO '/var/opt/mssql/data/vpic_log.ldf',
-         REPLACE
+    RESTORE DATABASE vPICList_Lite FROM DISK = N'/var/opt/mssql/backup/vpic.bak'
+    WITH MOVE N'vPICList_Lite' TO N'/var/opt/mssql/data/vPICList_Lite.mdf',
+        MOVE N'vPICList_Lite_log' TO N'/var/opt/mssql/data/vPICList_Lite_log.ldf',
+        REPLACE,
+        RECOVERY;
     "
     
     if [ $? -eq 0 ]; then
