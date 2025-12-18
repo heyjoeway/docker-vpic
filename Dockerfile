@@ -14,7 +14,7 @@ RUN chmod +x /entrypoint.sh
 # Create backup directory
 RUN mkdir -p /var/opt/mssql/backup
 
-ENV VPIC_URL=https://vpic.nhtsa.dot.gov/api/vPICList_lite_2025_11.bak.zip
+ENV VPIC_URL=https://vpic.nhtsa.dot.gov/downloads/vPICList_lite_2025_12.bak.zip
 
 # Download, extract, and rename the vpic backup file
 RUN set -e && \
