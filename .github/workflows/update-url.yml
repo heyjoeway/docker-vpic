@@ -1,0 +1,56 @@
+name: Update VPIC URL
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # daily
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Get latest VPIC ZIP URL
+        id: vpic
+        run: |
+          URL=$(python get_url.py)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Update Dockerfile if needed
+        run: |
+          set -e
+
+          NEW_URL="${{ steps.vpic.outputs.url }}"
+          OLD_URL=$(grep -E '^ENV VPIC_URL=' Dockerfile | cut -d= -f2-)
+
+          echo "Old URL: $OLD_URL"
+          echo "New URL: $NEW_URL"
+
+          if [ "$OLD_URL" = "$NEW_URL" ]; then
+            echo "URL unchanged"
+            exit 0
+          fi
+
+          sed -i "s|^ENV VPIC_URL=.*|ENV VPIC_URL=$NEW_URL|" Dockerfile
+
+      - name: Commit and push changes
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add Dockerfile
+          git commit -m "Update VPIC download URL"
+          git push
