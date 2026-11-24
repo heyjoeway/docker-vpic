@@ -2,6 +2,7 @@ name: Update VPIC URL
 
 permissions:
   contents: write
+  actions: write # needed to dispatch the Docker workflow
 
 on:
   schedule:
@@ -14,10 +15,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.x"
 
@@ -45,6 +46,7 @@ jobs:
           sed -i "s|^ENV VPIC_URL=.*|ENV VPIC_URL=$NEW_URL|" Dockerfile
 
       - name: Commit and push changes
+        id: commit
         run: |
           if git diff --quiet; then
             echo "No changes to commit"
@@ -57,3 +59,13 @@ jobs:
           git add Dockerfile
           git commit -m "Update VPIC download URL"
           git push
+          echo "pushed=true" >> "$GITHUB_OUTPUT"
+
+      # Pushes made with GITHUB_TOKEN don't trigger other workflows, so the
+      # Docker build has to be started explicitly. workflow_dispatch is exempt
+      # from that restriction.
+      - name: Trigger Docker build
+        if: steps.commit.outputs.pushed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run docker.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"
